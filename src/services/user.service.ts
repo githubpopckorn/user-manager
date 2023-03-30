@@ -1,65 +1,93 @@
-import { HttpError } from '../exceptions/http.error';
-import { IUser } from '../interfaces/models/user.interface';
-import { UserRepository } from '../repositories';
-import { BaseService } from './base.service';
+import { HttpError } from '../exceptions/http.error'
+import { type IUser } from '../interfaces/models/user.interface'
+import { type UserRepository, type RoleRepository } from '../repositories'
+import { BaseService } from './base.service'
 
+export class UserService extends BaseService<IUser> {
+  userRepository: UserRepository
+  roleRepository: RoleRepository
 
-export class UserService extends BaseService {
-    userRepository: UserRepository;
+  constructor ({ UserRepository, RoleRepository }: { UserRepository: UserRepository, RoleRepository: RoleRepository }) {
+    super(UserRepository)
+    this.userRepository = UserRepository
+    this.roleRepository = RoleRepository
+  }
 
-    constructor({ UserRepository }: { UserRepository: UserRepository }) {
-        super(UserRepository);
-        this.userRepository = UserRepository;
+  async signUp (user: IUser): Promise<{ createdUser: IUser, token: string }> {
+    const { email } = user
+
+    //* * Comprobar si el usuario ya esta registrado en la base de datos */
+    const userExist = await this.userRepository.findUserByEmail(email)
+    if (userExist != null) {
+      const error = new HttpError(400, 'El usuario ya se encuentra registrado')
+      throw error
     }
 
-    async signUp(user: IUser) {
-        const { email } = user;
+    /** Crear el usuario  */
+    const createdUser = await this.userRepository.create(user)
 
-        //** Comprobar si el usuario ya esta registrado en la base de datos */
-        const userExist = await this.userRepository.findUserByEmail(email);
-        if (userExist) {
-            const error = new HttpError(400, "El usuario ya se encuentra registrado");
-            throw error;
-        }
+    const token = await createdUser.generateAuthToken()
+    return { createdUser, token }
+  }
 
-        /** Crear el usuario  */
-        const createdUser = await this.userRepository.create(user);
+  async signIn (email: string, password: string): Promise<{ user: IUser, token: string }> {
+    const user = await this.userRepository.findUserByEmail(email)
+      if (user == null) {
+        const error = new HttpError(400, 'Correo o clave incorrecto')
+        throw error
+      }
 
-        const token = await createdUser.generateAuthToken();
-        return { createdUser, token }
+      const isMatch = user.comparePasswords(password)
+      if (!isMatch) {
+        const error = new HttpError(400, 'Correo o clave incorrecto')
+        throw error
+      }
+
+      const token = await user.generateAuthToken()
+      return { user, token }
+  }
+
+  async signOut (user: IUser, token: string): Promise<boolean> {
+    user.tokens = user.tokens.filter((t: string) => t !== token)
+    await user.save()
+    return true
+  }
+
+  async signOutAll (user: IUser): Promise<boolean> {
+    user.tokens = []
+    await user.save()
+    return true
+  }
+
+  async getProfile (userId: string): Promise<IUser> {
+    if (userId.length === 0) {
+      const error = new HttpError(400, 'Parametro id debe ser enviado')
+      throw error
     }
 
-    async signIn(email: string, password: string) {
-        try {
-            const user = await this.userRepository.findUserByEmail(email);
-            if (!user) {
-                const error = new HttpError(400, "Correo o clave incorrecto");
-                throw error;
-            }
+    const user = await this.userRepository.findById(userId)
+    if (user == null) {
+      const error = new HttpError(400, 'No se encontró el usuario')
+      throw error
+    }
+    return user
+  }
 
-            const isMatch = user.comparePasswords(password);
-            if (!isMatch) {
-                const error = new HttpError(400, "Correo o clave incorrecto");
-                throw error;
-            }
-                
-            const token = await user.generateAuthToken();
-            return { user, token };
-
-        } catch (error) {
-            throw error;
-        }
+  async assignRole (userId: string, roleId: string): Promise<IUser> {
+    const user = await this.userRepository.findById(userId)
+    if (user == null) {
+      const error = new HttpError(400, 'No se encontró el usuario')
+      throw error
     }
 
-    async signOut(user: IUser, token: string) {
-        user.tokens = user.tokens.filter((t: string) => t !== token);
-        await user.save();
-        return true;
+    const entityRol = await this.roleRepository.findById(roleId)
+    if (entityRol == null) {
+      const error = new HttpError(400, 'No se encontró el rol')
+      throw error
     }
 
-    async signOutAll(user: IUser) {
-        user.tokens = [];
-        await user.save();
-        return true;
-    }
+    user.roles.push(entityRol)
+    await user.save()
+    return user
+  }
 }
