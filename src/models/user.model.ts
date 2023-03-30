@@ -5,6 +5,7 @@ import { Config } from '../config'
 import { type IUser } from '../interfaces/models/user.interface'
 import { HttpError } from '../exceptions/http.error'
 import * as autopopulate from 'mongoose-autopopulate'
+import { type IResetToken } from '../interfaces/models/resettoken.interface'
 const { Schema, model } = mongoose
 
 const userSchema = new Schema<IUser>({
@@ -15,12 +16,24 @@ const userSchema = new Schema<IUser>({
   avatar: { type: Buffer },
   tokens: [{ token: { type: String } }],
   hasAvatar: { type: Boolean, default: false },
+  loginAttempts: { type: Number, default: 0 },
+  locked: { type: Boolean, default: false },
+  lockUntil: { type: Number },
+  resetPasswordTokens: [{
+    type: {
+      token: { type: String },
+      used: { type: Boolean, default: false }
+    }
+  }],
+  resetPasswordAttemps: { type: Number, default: 0 },
+  resetPasswordLockUntil: { type: Number },
   roles: [{
     type: Schema.Types.ObjectId,
     ref: 'Role',
     require: true,
     autopopulate: { select: 'name description _id' }
-  }]
+  }],
+  isCreator: { type: Boolean, default: false }
 }, {
   timestamps: true
 })
@@ -31,17 +44,33 @@ userSchema.methods.toJSON = function () {
   delete userObject.password
   delete userObject.tokens
   delete userObject.avatar
+  delete userObject.isCreator
   return userObject
 }
 
 userSchema.methods.comparePasswords = async function (password: string) {
-  return compareSync(password, this.password)
+  const user = this as IUser
+  return compareSync(password, user.password)
 }
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this
   const token = sign({ user }, Config.JWT_SECRET, { expiresIn: '4h' })
   user.tokens = user.tokens.concat({ token })
+  user.loginAttempts = 0
+  user.resetPasswordAttemps = 0
+  await user.save()
+  return token
+}
+
+userSchema.methods.generatePasswordResetToken = async function () {
+  const user = this as IUser
+  const token = sign({ email: user.email }, Config.JWT_RESET_SECRET, { expiresIn: 60 * 15 }) // 15 minutes
+  const resetToken: IResetToken = {
+    token,
+    used: false
+  }
+  user.resetPasswordTokens = user.resetPasswordTokens.concat(resetToken)
   await user.save()
   return token
 }
@@ -63,7 +92,7 @@ userSchema.methods.findByCredentials = async (email: string, password: string) =
 }
 
 userSchema.pre('save', async function (next) {
-  const user = this
+  const user = this as IUser
   if (user.isModified('password')) {
     const salt = genSaltSync(10)
     const hashedPassword = hashSync(user.password, salt)
