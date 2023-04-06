@@ -8,7 +8,7 @@ const roleSchema = new Schema<IRole>({
   description: { type: String, required: true, trim: true },
   permissions: [{
     type: Schema.Types.ObjectId,
-    required: true,
+    required: false,
     ref: 'Permission',
     autopopulate: { select: 'name code description _id' }
   }]

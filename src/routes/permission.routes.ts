@@ -47,7 +47,7 @@ export default ({ PermissionService }: { PermissionService: PermissionService })
     [AuthMiddleware, Authorize([SupportedPermissionsEnum.DELETE_PERMISSION]), ValidateRequest(PermissionSchemas.get, RequestParamsEnum.params)],
     (async (req: Request, res: Response, _next: NextFunction) => {
         const { id } = req.params
-        const deletedPermission = await PermissionService.delete(id)
+        const deletedPermission = await PermissionService.deletePermission(id)
         res.status(200).send({ success: true, data: deletedPermission })
     }) as RequestHandler)
 

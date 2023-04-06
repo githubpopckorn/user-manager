@@ -12,4 +12,8 @@ export class RoleRepository extends BaseRepository<IRole> {
   async findByName (name: string): Promise<IRole | null> {
     return await this.roleModel.findOne({ name })
   }
+
+  async findByIdPopulated (id: string): Promise<IRole | null> {
+    return await this.roleModel.findOne({ _id: id }).populate('users')
+  }
 }

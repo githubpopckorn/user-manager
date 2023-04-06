@@ -46,7 +46,7 @@ export default ({ RoleService }: { RoleService: RoleService }): Router => {
   [AuthMiddleware, Authorize([SupportedPermissionsEnum.DELETE_ROLE])],
   (async (req: Request, res: Response) => {
     const { id } = req.params
-    await RoleService.delete(id)
+    await RoleService.deleteRole(id)
     res.status(200).send({ success: true, message: 'Role eliminado correctamente' })
   }) as RequestHandler)
 

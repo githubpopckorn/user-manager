@@ -11,7 +11,7 @@ const permissionSchema = new Schema<IPermission>({
 
 // Virtuals
 permissionSchema.virtual('roles', {
-    ref: 'Rol',
+    ref: 'Role',
     localField: '_id',
     foreignField: 'permissions',
     justOne: false,

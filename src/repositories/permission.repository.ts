@@ -17,4 +17,8 @@ export class PermissionRepository extends BaseRepository<IPermission> {
     async findByCode (code: string): Promise<IPermission | null> {
         return await this.permissionModel.findOne({ code })
     }
+
+    async findByIdPopulated (id: string): Promise<IPermission | null> {
+        return await this.permissionModel.findOne({ _id: id }).populate('roles')
+    }
 }

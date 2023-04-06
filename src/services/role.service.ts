@@ -67,6 +67,22 @@ export class RoleService extends BaseService<IRole> {
     return true
   }
 
+  async deleteRole (id: string): Promise<boolean | null> {
+    const role = await this.roleRepository.findByIdPopulated(id)
+    if (role == null) {
+      const error = new HttpError(404, 'No se encontró el role')
+      throw error
+    }
+
+    if (role.users !== undefined && role.users.length > 0) {
+      const error = new HttpError(400, 'No se puede eliminar el rol porque está asignado a uno o más usuarios')
+      throw error
+    }
+
+    await this.roleRepository.delete(id)
+    return true
+  }
+
   async seedRoles (): Promise<void> {
     for (const role of RolesData) {
       const roleExist = await this.roleRepository.findByName(role.name)

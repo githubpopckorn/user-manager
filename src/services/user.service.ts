@@ -168,7 +168,7 @@ export class UserService extends BaseService<IUser> {
     }
 
     const token = await user.generatePasswordResetToken()
-    console.log(token)
+    console.log('Token', token)
     return true
   }
 
@@ -383,9 +383,6 @@ export class UserService extends BaseService<IUser> {
     // Todo: revisar porque no funciona
     const now = moment()
     const lockeUntil = moment.unix(user.lockUntil)
-    console.log(now)
-    console.log(lockeUntil)
-    console.log(now.isAfter(lockeUntil))
     if (user.lockUntil !== 0 && now.isAfter(lockeUntil)) {
       user.locked = false
       user.loginAttempts = 0
