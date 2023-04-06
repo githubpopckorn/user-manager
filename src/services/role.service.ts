@@ -1,14 +1,17 @@
 import { BaseService } from './base.service'
-import { type RoleRepository } from '../repositories'
+import { type PermissionRepository, type RoleRepository } from '../repositories'
 import { type IRole } from '../interfaces/models/role.interface'
 import { HttpError } from '../exceptions/http.error'
+import { RolesData, RolesPermissionsData } from '../Utils/seed-data'
 
 export class RoleService extends BaseService<IRole> {
   roleRepository: RoleRepository
+  permissionRepository: PermissionRepository
 
-  constructor ({ RoleRepository }: { RoleRepository: RoleRepository }) {
+  constructor ({ RoleRepository, PermissionRepository }: { RoleRepository: RoleRepository, PermissionRepository: PermissionRepository }) {
     super(RoleRepository)
     this.roleRepository = RoleRepository
+    this.permissionRepository = PermissionRepository
   }
 
   async createRole (role: IRole): Promise<IRole> {
@@ -21,5 +24,71 @@ export class RoleService extends BaseService<IRole> {
     }
 
     return await this.roleRepository.create(role)
+  }
+
+  async assignPermissionToRole (roleName: string, permissionCode: string): Promise<boolean> {
+    const rol = await this.roleRepository.findByName(roleName)
+
+    if (rol == null) {
+      const error = new HttpError(404, 'El role no existe')
+      throw error
+    }
+
+    const permission = await this.permissionRepository.findByCode(permissionCode)
+    if (permission == null) {
+      const error = new HttpError(404, 'El permiso no existe')
+      throw error
+    }
+
+    if (rol.permissions.find(p => p.code === permissionCode) != null) {
+      const error = new HttpError(400, 'El permiso ya se encuentra asignado al role')
+      throw error
+    }
+
+    rol.permissions.push(permission)
+    await rol.save()
+    return true
+  }
+
+  async removePermissionFromRole (roleName: string, permissionCode: string): Promise<boolean> {
+    const rol = await this.roleRepository.findByName(roleName)
+    if (rol == null) {
+      const error = new HttpError(404, 'El role no existe')
+      throw error
+    }
+
+    if (rol.permissions.find(p => p.code === permissionCode) == null) {
+      const error = new HttpError(404, 'El permiso no se encuentra asignado al role')
+      throw error
+    }
+
+    rol.permissions = rol.permissions.filter(p => p.code !== permissionCode)
+    await rol.save()
+    return true
+  }
+
+  async seedRoles (): Promise<void> {
+    for (const role of RolesData) {
+      const roleExist = await this.roleRepository.findByName(role.name)
+      if (roleExist == null) {
+        await this.roleRepository.create(role)
+      }
+    }
+  }
+
+  async seedPermissionRole (): Promise<void> {
+    for (const rolePermission of RolesPermissionsData) {
+      for (const permission of rolePermission.permissions) {
+        const rol = await this.roleRepository.findByName(rolePermission.role)
+        if (rol == null) {
+          const error = new HttpError(404, 'El role no existe')
+          throw error
+        }
+        const hasPermission = rol.permissions.find(p => p.code === permission)
+        if (hasPermission == null) {
+          await this.assignPermissionToRole(rolePermission.role, permission)
+        }
+      }
+    }
   }
 }

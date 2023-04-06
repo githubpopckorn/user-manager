@@ -218,7 +218,12 @@ export class UserService extends BaseService<IUser> {
    * @param password {string}
    * @returns {Promise<boolean>}
    */
-  async resetPassword (token: string, password: string): Promise<boolean> {
+  async resetPassword (token: string, password: string, confirmPassword: string): Promise<boolean> {
+    if (password !== confirmPassword) {
+      const error = new HttpError(400, 'Las contraseñas no coinciden')
+      throw error
+    }
+
     await this.checkResetPasswordToken(token)
 
     const decodedToken = jwt.verify(token, this._config.JWT_RESET_SECRET) as { email: string }
@@ -288,6 +293,7 @@ export class UserService extends BaseService<IUser> {
   /**
    * Asigna un nuevo rol al usuario
    * Solo un usuario con rol superadmin puede asignar este rol a otro usuario
+   * devueve un error si el usuario ya tiene asignado el rol
    * @param userId id del usuario al que se le asignara el rol
    * @param roleId id del rol a asignar
    * @param performedActionUserRoles roles del usuario que realiza la accion
@@ -306,13 +312,16 @@ export class UserService extends BaseService<IUser> {
       throw error
     }
 
-    console.log(user.roles)
-    console.log(user.name)
     if (entityRol.name === SupportedRolesEnum.SUPERADMIN) {
       if (!performedActionUserRoles.some((r: IRole) => r.name === SupportedRolesEnum.SUPERADMIN)) {
         const error = new HttpError(404, 'No tienes los permisos necesarios para asignar este rol')
         throw error
       }
+    }
+
+    if (user.roles.some((r: IRole) => r.name === entityRol.name)) {
+      const error = new HttpError(400, 'El usuario ya tiene este rol asignado')
+      throw error
     }
 
     user.roles.push(entityRol)
@@ -356,7 +365,12 @@ export class UserService extends BaseService<IUser> {
       }
     }
 
-    user.roles = user.roles.filter((r: IRole) => r._id !== roleId)
+    if (!user.roles.some((role: IRole) => role.name === entityRol.name)) {
+      const error = new HttpError(400, 'El usuario no tiene asignado este rol')
+      throw error
+    }
+
+    user.roles = user.roles.filter((role: IRole) => role.name !== entityRol.name)
     await user.save()
     return true
   }

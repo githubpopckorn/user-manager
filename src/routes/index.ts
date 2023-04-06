@@ -5,7 +5,7 @@ import compression from 'compression'
 import { ErrorMiddleware, NotFoundMiddleware } from '../middlewares'
 require('express-async-errors')
 
-export default ({ UserRoute, RoleRoute }: { UserRoute: Router, RoleRoute: Router }): Router => {
+export default ({ UserRoute, RoleRoute, PermissionRoute }: { UserRoute: Router, RoleRoute: Router, PermissionRoute: Router }): Router => {
   const router = express.Router()
   const apiRoutes = express.Router()
 
@@ -18,6 +18,7 @@ export default ({ UserRoute, RoleRoute }: { UserRoute: Router, RoleRoute: Router
   // Api routes
   apiRoutes.use('/user', UserRoute)
   apiRoutes.use('/role', RoleRoute)
+  apiRoutes.use('/permission', PermissionRoute)
   router.use('/api/v1', apiRoutes)
 
   // Middlewares

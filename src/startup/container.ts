@@ -5,18 +5,19 @@ import { Config } from '../config'
 import app from '.'
 
 // Services
-import { UserService, RoleService } from '../services'
+import { UserService, RoleService, PermissionService } from '../services'
 
 // Routes
 import UserRoute from '../routes/user.routes'
 import RoleRoute from '../routes/role.routes'
+import PermissionRoute from '../routes/permission.routes'
 import Routes from '../routes/index'
 
 // Models
-import { User, Role } from '../models'
+import { User, Role, Permission } from '../models'
 
 // Repositories
-import { UserRepository, RoleRepository } from '../repositories'
+import { UserRepository, RoleRepository, PermissionRepository } from '../repositories'
 
 const container = createContainer()
 container.register({
@@ -26,19 +27,23 @@ container.register({
 })
   .register({
     UserRepository: asClass(UserRepository).singleton(),
-    RoleRepository: asClass(RoleRepository).singleton()
+    RoleRepository: asClass(RoleRepository).singleton(),
+    PermissionRepository: asClass(PermissionRepository).singleton()
   })
   .register({
     UserModel: asValue(User),
-    RoleModel: asValue(Role)
+    RoleModel: asValue(Role),
+    PermissionModel: asValue(Permission)
   })
   .register({
     UserRoute: asFunction(UserRoute).singleton(),
-    RoleRoute: asFunction(RoleRoute).singleton()
+    RoleRoute: asFunction(RoleRoute).singleton(),
+    PermissionRoute: asFunction(PermissionRoute).singleton()
   })
   .register({
     UserService: asClass(UserService).singleton(),
-    RoleService: asClass(RoleService).singleton()
+    RoleService: asClass(RoleService).singleton(),
+    PermissionService: asClass(PermissionService).singleton()
   })
 
 export default container

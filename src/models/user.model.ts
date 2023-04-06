@@ -45,6 +45,7 @@ userSchema.methods.toJSON = function () {
   delete userObject.tokens
   delete userObject.avatar
   delete userObject.isCreator
+  delete userObject.resetPasswordTokens
   return userObject
 }
 
@@ -55,7 +56,7 @@ userSchema.methods.comparePasswords = async function (password: string) {
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this
-  const token = sign({ user }, Config.JWT_SECRET, { expiresIn: '4h' })
+  const token = sign({ sub: user._id }, Config.JWT_SECRET, { expiresIn: '4h' })
   user.tokens = user.tokens.concat({ token })
   user.loginAttempts = 0
   user.resetPasswordAttemps = 0

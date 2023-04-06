@@ -1,11 +1,17 @@
 import mongoose from 'mongoose'
 import { type IRole } from '../interfaces/models/role.interface'
+import * as autopopulate from 'mongoose-autopopulate'
 const { Schema, model } = mongoose
 
 const roleSchema = new Schema<IRole>({
   name: { type: String, required: true, trim: true },
   description: { type: String, required: true, trim: true },
-  permissions: [{ type: String, required: true, trim: true }]
+  permissions: [{
+    type: Schema.Types.ObjectId,
+    required: true,
+    ref: 'Permission',
+    autopopulate: { select: 'name code description _id' }
+  }]
 }, {
   timestamps: true
 })
@@ -28,4 +34,5 @@ roleSchema.methods.toJSON = function () {
   return roleObject
 }
 
+roleSchema.plugin(autopopulate.default)
 export const Role = model<IRole>('Role', roleSchema)
