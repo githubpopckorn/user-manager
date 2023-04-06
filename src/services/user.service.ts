@@ -149,6 +149,10 @@ export class UserService extends BaseService<IUser> {
     return true
   }
 
+  hello (): string {
+    return 'Hello'
+  }
+
   /**
    *  Genera un token de recuperacion de contraseña y lo envia al correo del usuario
    *  si el usuario esta bloqueado comprueba si puede desbloquearse y lo desbloquea
@@ -392,5 +396,15 @@ export class UserService extends BaseService<IUser> {
       const error = new HttpError(423, 'El usuario se encuentra bloqueado')
       throw error
     }
+  }
+
+  async getUserByEmail (email: string): Promise<IUser> {
+    console.log('aaaa')
+    const user = await this.userRepository.findUserByEmail(email)
+    if (user == null) {
+      const error = new HttpError(400, 'No se encontró el usuario')
+      throw error
+    }
+    return user
   }
 }
