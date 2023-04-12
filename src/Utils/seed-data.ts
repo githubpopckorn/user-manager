@@ -1,5 +1,24 @@
 import { type IPermission } from '../interfaces/models/permission.interface'
 
+export const UsersData = [
+    {
+        name: 'Santiago',
+        username: 'admin',
+        password: 'admin',
+        email: 'santy_lopez@live.com.ar',
+        roles: ['Admin'],
+        isCreator: true
+    },
+    {
+        name: 'Karla',
+        username: 'karly',
+        password: 'karly',
+        email: '',
+        roles: ['User'],
+        isCreator: false
+    }
+]
+
 export const PermissionsData: IPermission[] = [
     {
         name: 'Listar Usuario',

@@ -5,7 +5,7 @@ import { Config } from '../config'
 import app from '.'
 
 // Services
-import { UserService, RoleService, PermissionService } from '../services'
+import { UserService, RoleService, PermissionService, MailService } from '../services'
 
 // Routes
 import UserRoute from '../routes/user.routes'
@@ -43,7 +43,8 @@ container.register({
   .register({
     UserService: asClass(UserService).singleton(),
     RoleService: asClass(RoleService).singleton(),
-    PermissionService: asClass(PermissionService).singleton()
+    PermissionService: asClass(PermissionService).singleton(),
+    MailService: asClass(MailService).singleton()
   })
 
 export default container

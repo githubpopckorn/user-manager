@@ -8,17 +8,21 @@ import moment from 'moment'
 import { type IResetToken } from '../interfaces/models/resettoken.interface'
 import { type IRole } from '../interfaces/models/role.interface'
 import { SupportedRolesEnum } from '../types/types'
+import { type MailService } from './mail.service'
+import { type MailOptions } from 'nodemailer/lib/json-transport'
 
 export class UserService extends BaseService<IUser> {
   userRepository: UserRepository
   roleRepository: RoleRepository
   private readonly _config: IConfig
+  private readonly _mailService: MailService
 
-  constructor ({ UserRepository, RoleRepository, config }: { UserRepository: UserRepository, RoleRepository: RoleRepository, config: IConfig }) {
+  constructor ({ UserRepository, RoleRepository, config, MailService }: { UserRepository: UserRepository, RoleRepository: RoleRepository, config: IConfig, MailService: MailService }) {
     super(UserRepository)
     this.userRepository = UserRepository
     this.roleRepository = RoleRepository
     this._config = config
+    this._mailService = MailService
   }
 
   /**
@@ -173,6 +177,20 @@ export class UserService extends BaseService<IUser> {
 
     const token = await user.generatePasswordResetToken()
     console.log('Token', token)
+
+    const resetUrl = `${this._config.CLIENT_URL}/reset-password/${token}`
+    const html = `<p>Para recuperar tu contraseña haz click en el siguiente link</p>
+                  <a href="${resetUrl}">Ingresa Aqui</a>`
+
+    const mailOptions: MailOptions = {
+      from: this._config.MAIL_FROM,
+      to: email,
+      subject: 'Recuperación de contraseña',
+      html
+    }
+
+    await this._mailService.sendMail(mailOptions)
+
     return true
   }
 
